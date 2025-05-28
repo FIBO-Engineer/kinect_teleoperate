@@ -5,6 +5,7 @@ add_compile_options(-std=c++17)
 set(CMAKE_BUILD_TYPE Release)
 # Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(unitree_sdk2)
 
 set(MuJoCo_Include_Dir ${CMAKE_CURRENT_SOURCE_DIR}/../mujoco-3.1.5/include)
 set(MuJoCo_Library_Dir ${CMAKE_CURRENT_SOURCE_DIR}/../mujoco-3.1.5/lib)
@@ -22,7 +23,7 @@ target_include_directories(kinect_teleoperate
     ../sample_helper_includes 
     ${MuJoCo_Include_Dir}
     include/
-    # unitree_sdk2
+    unitree_sdk2
 )
 
 # Dependencies of this library
@@ -34,6 +35,6 @@ target_link_libraries(kinect_teleoperate PRIVATE
     glfw::glfw
     ${MuJoCo_Libraries}
     Eigen3::Eigen
-    # unitree_sdk2
+    unitree_sdk2
 )
 

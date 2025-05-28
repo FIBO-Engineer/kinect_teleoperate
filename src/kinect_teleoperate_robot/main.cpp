@@ -28,6 +28,7 @@
 #include "StartEndPoseDetector.hpp"
 // For retargeting function from the skeleton joint angles to the robot motor joint angles.
 #include "jointRetargeting.hpp"
+#include "hardware_control_signal.hpp"
 
 using namespace std::chrono;
 
@@ -35,7 +36,7 @@ bool s_isRunning = true;
 
 #define Control_G1 false
 #define Control_H1 true
-#define Real_Control false    // control real unitree robot in reality
+#define Real_Control true    // control real unitree robot in reality
 #define Enable_Torso false    // enable torso rotation angle mapping. Test function, open with caution!
 #define Enable_Hand  false    // enable hand opening and closing status detection. Test function, open with caution!
 #define EchoFrequency false   // Whether to display the running frequency of each thread
@@ -43,6 +44,7 @@ bool s_isRunning = true;
 #if Real_Control
 // SDK include files for unitree robot real control
 // Please refer to https://github.com/unitreerobotics/unitree_sdk2
+#include "real_arm_controller.hpp"
 #endif
 
 // kinect body tracking skeleton joint angle
@@ -51,17 +53,6 @@ bool s_isRunning = true;
 // sc:=spine chest, ls:=left shoulder, le:=left elbow, rs:=right shoulder, re:=right elbow, lh:=left hand, rh:=right hand
 // _r:=roll, _p:=pitch, _y:=yaw, _a:=angle
 static float sc_r, sc_p, sc_y, ls_r, ls_p, ls_y, le_r, le_p, le_y, rs_r, rs_p, rs_y, re_r, re_p, re_y, lh_a, rh_a;
-
-struct hardware_control_signal {
-    double left_shoulder_roll = 0.0;
-    double left_shoulder_pitch = 0.0;
-    double left_shoulder_yaw = 0.0;
-    double right_shoulder_roll = 0.0;
-    double right_shoulder_pitch = 0.0;
-    double right_shoulder_yaw = 0.0;
-    double left_elbow_yaw = 0.0;
-    double right_elbow_yaw = 0.0;
-};
 
 // For control real robot G1
 #if Control_G1
@@ -397,8 +388,11 @@ void MujocoRender_loop() {
 #endif
 
 /*****************************************************Control Smooth and Transfer*****************************************************************/
-
+#if Real_Control
+void Control_loop(RealArmController* real_controller) {
+#else
 void Control_loop() {
+#endif
     std::cout<<"control loop start..."<<std::endl;
     int left_shoulder_roll_joint_id = mj_name2id(m, mjOBJ_ACTUATOR, "left_shoulder_roll_joint");
     int left_shoulder_pitch_joint_id = mj_name2id(m, mjOBJ_ACTUATOR, "left_shoulder_pitch_joint");
@@ -489,6 +483,7 @@ void Control_loop() {
             H1_hardware_signal.right_shoulder_yaw = right_shoulder_roll;
             H1_hardware_signal.left_elbow_yaw = left_elbow_yaw;
             H1_hardware_signal.right_elbow_yaw = right_elbow_yaw;
+            real_controller->set_control_signal(H1_hardware_signal);
             #elif Control_G1
             G1_hardware_signal.left_shoulder_pitch = left_shoulder_yaw;
             G1_hardware_signal.left_shoulder_roll = left_shoulder_roll;
@@ -696,12 +691,17 @@ void Main_loop(){
 
 int main(int argc, char** argv)
 {
-
+    
     #if Control_G1
     const char* model_path = "../src/unitree_g1/scene.xml";
     #endif
     #if Control_H1
     const char* model_path = "../src/unitree_h1/mjcf/scene.xml"; 
+    #endif
+    #if Real_Control
+    std::cout << "Initialize Real arm Controller" << std::endl;
+    RealArmController h1_controller("wlp3s0"); // TODO: Change to your interface
+    std::cout << "Initialization succeeded" << std::endl;
     #endif
 
     char error[1000];
@@ -709,7 +709,13 @@ int main(int argc, char** argv)
     d = mj_makeData(m);
     mj_resetData(m, d);
 
-    std::thread control_thread(Control_loop);
+    std::thread control_thread(
+        [&](){ Control_loop(
+                #if Real_Control && Control_H1
+                  &h1_controller
+                #endif
+            ); }
+    );
     std::thread mujocoRender_thread(MujocoRender_loop);
 
     Main_loop();
