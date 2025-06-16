@@ -123,10 +123,15 @@ inline RealArmController::RealArmController(const std::string& network_interface
     , max_joint_delta_(max_joint_velocity_ * control_dt_)
     , sleep_time_(std::chrono::milliseconds(static_cast<int>(control_dt_ / 0.001f)))
     , arm_joints_{
-        JointIndex::kLeftShoulderPitch,  JointIndex::kLeftShoulderRoll,
-        JointIndex::kLeftShoulderYaw,    JointIndex::kLeftElbow,
-        JointIndex::kRightShoulderPitch, JointIndex::kRightShoulderRoll,
-        JointIndex::kRightShoulderYaw,   JointIndex::kRightElbow
+        JointIndex::kLeftShoulderPitch,
+        JointIndex::kLeftShoulderRoll,
+        JointIndex::kLeftShoulderYaw,
+        JointIndex::kLeftElbow,
+        
+        JointIndex::kRightShoulderPitch,
+        JointIndex::kRightShoulderRoll,
+        JointIndex::kRightShoulderYaw,
+        JointIndex::kRightElbow
     }
 {
     std::cout << "Initializing network interface " << network_interface << std::endl;

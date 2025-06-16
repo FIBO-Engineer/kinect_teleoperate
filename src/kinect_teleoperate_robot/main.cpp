@@ -41,11 +41,6 @@ bool s_isRunning = true;
 #define Enable_Hand  false    // enable hand opening and closing status detection. Test function, open with caution!
 #define EchoFrequency false   // Whether to display the running frequency of each thread
 
-#if Real_Control
-// SDK include files for unitree robot real control
-// Please refer to https://github.com/unitreerobotics/unitree_sdk2
-#include "real_arm_controller.hpp"
-#endif
 
 // kinect body tracking skeleton joint angle
 // reference: https://learn.microsoft.com/en-us/azure/kinect-dk/body-joints
@@ -56,11 +51,21 @@ static float sc_r, sc_p, sc_y, ls_r, ls_p, ls_y, le_r, le_p, le_y, rs_r, rs_p, r
 
 // For control real robot G1
 #if Control_G1
+#if Real_Control
+// SDK include files for unitree robot real control
+// Please refer to https://github.com/unitreerobotics/unitree_sdk2
+#include "real_arm_controller_g1.hpp"
+#endif
 hardware_control_signal G1_hardware_signal;
 #endif
 
 // For control real robot H1
 #if Control_H1
+#if Real_Control
+// SDK include files for unitree robot real control
+// Please refer to https://github.com/unitreerobotics/unitree_sdk2
+#include "real_arm_controller_h1.hpp"
+#endif
 hardware_control_signal H1_hardware_signal;
 #endif
 
@@ -493,6 +498,7 @@ void Control_loop() {
             G1_hardware_signal.right_shoulder_yaw = right_shoulder_roll;
             G1_hardware_signal.left_elbow_yaw = left_elbow_yaw;
             G1_hardware_signal.right_elbow_yaw = right_elbow_yaw;
+            real_controller->set_control_signal(H1_hardware_signal);
             #endif
             #endif
 
