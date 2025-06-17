@@ -51,8 +51,6 @@ According to main.cpp\
 
 #include "hardware_control_signal.hpp"
 
-#define JOINT_AMTS 10
-
 class RealArmController {
 public:
     explicit RealArmController(const std::string& network_interface);
@@ -115,7 +113,7 @@ private:
     unitree_go::msg::dds_::LowCmd_ msg_;
     unitree_hg::msg::dds_::LowState_ state_msg_;
     
-    std::array<JointIndex, JOINT_AMTS> arm_joints_;
+    std::array<JointIndex, 8> arm_joints_;
     hardware_control_signal current_signal_;
     
     float weight_;
@@ -133,7 +131,7 @@ private:
 };
 
 inline RealArmController::RealArmController(const std::string& network_interface) 
-    : weight_(0.0f)
+    : weight_(1.0f)
     , weight_rate_(0.2f)
     , kp_(60.f)
     , kd_(1.5f)
@@ -145,21 +143,15 @@ inline RealArmController::RealArmController(const std::string& network_interface
     , max_joint_delta_(max_joint_velocity_ * control_dt_)
     , sleep_time_(std::chrono::milliseconds(static_cast<int>(control_dt_ / 0.001f)))
     , arm_joints_{
-        JointIndex::kLeftShoulderPitch,  
+        JointIndex::kLeftShoulderPitch,
         JointIndex::kLeftShoulderRoll,
         JointIndex::kLeftShoulderYaw,
         JointIndex::kLeftElbowPitch,
-        JointIndex::kLeftElbowRoll,
-
+        
         JointIndex::kRightShoulderPitch,
         JointIndex::kRightShoulderRoll,
         JointIndex::kRightShoulderYaw,
-        JointIndex::kRightElbowPitch,
-        JointIndex::kRightElbowRoll,
-        
-        // JointIndex::kWaistYaw,
-        // JointIndex::kWaistRoll,
-        // JointIndex::kWaistPitch
+        JointIndex::kRightElbowPitch
     }
 {
     std::cout << "Initializing network interface " << network_interface << std::endl;
@@ -183,46 +175,6 @@ inline RealArmController::RealArmController(const std::string& network_interface
         auto s = (const unitree_hg::msg::dds_::LowState_*)msg;
         memcpy(&state_msg_, s, sizeof(unitree_hg::msg::dds_::LowState_));
     }, 1);
-
-    
-    // get current joint position
-    std::array<float, 13> current_jpos{};
-    std::cout<<"Current joint position: ";
-    for (int i = 0; i < arm_joints.size(); ++i) {
-        current_jpos.at(i) = state_msg_.motor_state().at(arm_joints.at(i)).q();
-        std::cout << current_jpos.at(i) << " ";
-    }
-    std::cout << std::endl;
-
-    // set init pos
-    std::cout << "Initailizing arms ...";
-    float init_time = 2.0f;
-    int init_time_steps = static_cast<int>(init_time / control_dt);
-
-    std::array<float, JOINT_AMTS> init_pos{0};
-
-    for (int i = 0; i < init_time_steps; ++i) {
-        // set weight
-        weight = 1.0;
-        msg.motor_cmd().at(JointIndex::kNotUsedJoint).q(weight);
-        float phase = 1.0 * i / init_time_steps;
-        std::cout << "Phase: " << phase << std::endl;
-
-        // set control joints
-        for (int j = 0; j < init_pos.size(); ++j) {
-            msg.motor_cmd().at(arm_joints.at(j)).q(init_pos.at(j) * phase + current_jpos.at(j) * (1 - phase));
-            msg.motor_cmd().at(arm_joints.at(j)).dq(dq);
-            msg.motor_cmd().at(arm_joints.at(j)).kp(kp);
-            msg.motor_cmd().at(arm_joints.at(j)).kd(kd);
-            msg.motor_cmd().at(arm_joints.at(j)).tau(tau_ff);
-        }
-
-        // send dds msg
-        arm_sdk_publisher->Write(msg);
-
-        // sleep
-        std::this_thread::sleep_for(sleep_time);
-    }
 }
 
 inline RealArmController::~RealArmController() = default;
@@ -231,18 +183,15 @@ inline void RealArmController::set_control_signal(const hardware_control_signal&
     current_signal_ = signal;
     msg_.motor_cmd().at(JointIndex::kNotUsedJoint).q(weight_);
 
-    std::array<float, JOINT_AMTS> target_positions = {
+    std::array<float, 8> target_positions = {
         static_cast<float>(current_signal_.left_shoulder_pitch),
         static_cast<float>(current_signal_.left_shoulder_roll),
         static_cast<float>(current_signal_.left_shoulder_yaw),
         static_cast<float>(current_signal_.left_elbow_pitch),
-        static_cast<float>(current_signal_.left_elbow_roll),
-
         static_cast<float>(current_signal_.right_shoulder_pitch),
         static_cast<float>(current_signal_.right_shoulder_roll),
         static_cast<float>(current_signal_.right_shoulder_yaw),
-        static_cast<float>(current_signal_.right_elbow_pitch),
-        static_cast<float>(current_signal_.right_elbow_roll),
+        static_cast<float>(current_signal_.right_elbow_pitch)
     };
 
     for (int j = 0; j < arm_joints_.size(); ++j) {

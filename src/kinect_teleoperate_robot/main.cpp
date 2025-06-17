@@ -33,12 +33,13 @@
 using namespace std::chrono;
 
 bool s_isRunning = true;
+bool kb_start = false;
 
 #define Control_G1 true
 #define Control_H1 false
 #define Real_Control true    // control real unitree robot in reality
 #define Enable_Torso false    // enable torso rotation angle mapping. Test function, open with caution!
-#define Enable_Hand  true    // enable hand opening and closing status detection. Test function, open with caution!
+#define Enable_Hand  false    // enable hand opening and closing status detection. Test function, open with caution!
 #define EchoFrequency false   // Whether to display the running frequency of each thread
 
 
@@ -47,7 +48,7 @@ bool s_isRunning = true;
 // ':=' means that the item on the left hand side is being defined to be what is on the right hand side.
 // sc:=spine chest, ls:=left shoulder, le:=left elbow, rs:=right shoulder, re:=right elbow, lh:=left hand, rh:=right hand
 // _r:=roll, _p:=pitch, _y:=yaw, _a:=angle
-static float sc_r, sc_p, sc_y, ls_r, ls_p, ls_y, le_r, le_p, le_y, rs_r, rs_p, rs_y, re_r, re_p, re_y, lh_a, rh_a;
+static float sc_r, sc_p, sc_y, ls_r, ls_p, ls_y, le_r, le_p, le_y, rs_r, rs_p, rs_y, re_r, re_p, re_y, lh_a, rh_a, lw_r, lw_p, lw_y, rw_r, rw_p, rw_y;
 
 // For control real robot G1
 #if Control_G1
@@ -100,6 +101,9 @@ int64_t ProcessKey(void* /*context*/, int key)
         // Quit
     case GLFW_KEY_ESCAPE:
         s_isRunning = false;
+        break;
+    case GLFW_KEY_S:
+        kb_start = true;
         break;
     case GLFW_KEY_K:
         s_layoutMode = (Visualization::Layout3d)(((int)s_layoutMode + 1) % (int)Visualization::Layout3d::Count);
@@ -411,6 +415,9 @@ void Control_loop() {
     #elif Control_G1
     int left_elbow_pitch_joint_id = mj_name2id(m, mjOBJ_ACTUATOR, "left_elbow_pitch_joint");
     int right_elbow_pitch_joint_id = mj_name2id(m, mjOBJ_ACTUATOR, "right_elbow_pitch_joint");
+
+    int left_elbow_roll_joint_id = mj_name2id(m, mjOBJ_ACTUATOR, "left_elbow_roll_joint");
+    int right_elbow_roll_joint_id = mj_name2id(m, mjOBJ_ACTUATOR, "right_elbow_roll_joint");
     #endif
     #if Enable_Torso
     int torso_joint_id = mj_name2id(m, mjOBJ_ACTUATOR, "torso_joint");
@@ -421,6 +428,11 @@ void Control_loop() {
     MovingAverageFilter ls_r_filter,ls_p_filter,ls_y_filter,
                         rs_r_filter,rs_p_filter,rs_y_filter,
                         le_y_filter,re_y_filter,sc_p_filter;
+
+    // MovingAverageFilter lw_r_filter,lw_p_filter,lw_y_filter,
+    //                     rw_r_filter,rw_p_filter,rw_y_filter;
+    //                     // le_p_filter,re_p_filter,
+    //                     // le_r_filter,re_r_filter;
 
     StartEndPoseDetector pose_detector;
 
@@ -435,6 +447,12 @@ void Control_loop() {
         double left_elbow_yaw = LE_mappingCameraYaw2RobotRadians(le_y);
         double right_elbow_yaw = RE_mappingCameraYaw2RobotRadians(re_y);
 
+        // double left_elbow_pitch = LE_mappingCameraPitch2RobotRadians(le_p);
+        // double right_elbow_pitch = RE_mappingCameraPitch2RobotRadians(re_p);
+
+        // double left_elbow_roll = LE_mappingCameraRoll2RobotRadians(le_r);
+        // double right_elbow_roll = RE_mappingCameraRoll2RobotRadians(re_r);
+
         #if Enable_Torso
         double spine_chest_torso = SC_mappingCameraPitch2RobotTorso(sc_p);
         #endif
@@ -442,7 +460,7 @@ void Control_loop() {
         bool start = pose_detector.isStartEndPose(left_shoulder_roll, left_shoulder_pitch, left_shoulder_yaw,
                                                   right_shoulder_roll, right_shoulder_pitch, right_shoulder_yaw,
                                                   left_elbow_yaw, right_elbow_yaw);
-        if(start)
+        if(start || kb_start)
         {
             // smoothing
             left_shoulder_roll = ls_r_filter.update(left_shoulder_roll);
@@ -453,6 +471,10 @@ void Control_loop() {
             right_shoulder_yaw = rs_y_filter.update(right_shoulder_yaw);
             left_elbow_yaw = le_y_filter.update(left_elbow_yaw);
             right_elbow_yaw = re_y_filter.update(right_elbow_yaw);
+            // left_elbow_pitch = le_p_filter.update(left_elbow_pitch);
+            // right_elbow_pitch = re_p_filter.update(right_elbow_pitch);
+            // left_elbow_roll = le_r_filter.update(left_elbow_roll);s
+
             #if Enable_Torso
             spine_chest_torso = sc_p_filter.update(spine_chest_torso);
             #endif
@@ -473,6 +495,12 @@ void Control_loop() {
             d->ctrl[right_shoulder_yaw_joint_id] = right_shoulder_roll;
             d->ctrl[left_elbow_pitch_joint_id] = left_elbow_yaw;
             d->ctrl[right_elbow_pitch_joint_id] = right_elbow_yaw;
+            
+            // std::cout << "left_wrist: " << lw_r << " " << lw_p << " " << lw_y << std::endl;
+            // std::cout << "right_wrist: " << rw_r << " " << rw_p << " " << rw_y << std::endl;
+            
+            // d->ctrl[left_elbow_roll_joint_id] = lw_r;
+            // d->ctrl[right_elbow_roll_joint_id] = rw_r;
             #if Enable_Torso
             d->ctrl[torso_joint_id] = spine_chest_torso;
             #endif
@@ -481,8 +509,8 @@ void Control_loop() {
             #if Real_Control
             #if Control_H1
             H1_hardware_signal.left_shoulder_pitch = left_shoulder_yaw;
-            H1_hardware_signal.left_shoulder_roll = left_shoulder_roll;
-            H1_hardware_signal.left_shoulder_yaw = left_shoulder_pitch;
+            H1_hardware_signal.left_shoulder_roll = left_shoulder_pitch;
+            H1_hardware_signal.left_shoulder_yaw = left_shoulder_roll;
             H1_hardware_signal.right_shoulder_pitch = right_shoulder_yaw;
             H1_hardware_signal.right_shoulder_roll = right_shoulder_pitch;
             H1_hardware_signal.right_shoulder_yaw = right_shoulder_roll;
@@ -491,14 +519,15 @@ void Control_loop() {
             real_controller->set_control_signal(H1_hardware_signal);
             #elif Control_G1
             G1_hardware_signal.left_shoulder_pitch = left_shoulder_yaw;
-            G1_hardware_signal.left_shoulder_roll = left_shoulder_roll;
-            G1_hardware_signal.left_shoulder_yaw = left_shoulder_pitch;
+            G1_hardware_signal.left_shoulder_roll = left_shoulder_pitch;
+            G1_hardware_signal.left_shoulder_yaw = left_shoulder_roll;
             G1_hardware_signal.right_shoulder_pitch = right_shoulder_yaw;
             G1_hardware_signal.right_shoulder_roll = right_shoulder_pitch;
             G1_hardware_signal.right_shoulder_yaw = right_shoulder_roll;
-            G1_hardware_signal.left_elbow_yaw = left_elbow_yaw;
-            G1_hardware_signal.right_elbow_yaw = right_elbow_yaw;
-            real_controller->set_control_signal(H1_hardware_signal);
+            G1_hardware_signal.left_elbow_pitch = left_elbow_yaw;
+            G1_hardware_signal.right_elbow_pitch = right_elbow_yaw;
+            // TODO: Roll
+            real_controller->set_control_signal(G1_hardware_signal);
             #endif
             #endif
 
@@ -512,7 +541,6 @@ void Control_loop() {
         }
     }
 }
-
 
 // Process the newly captured skeleton point data to calculate the joint angles that control the robot
 void ProcessNewSkeletonData(k4abt_frame_t bodyFrame) {
@@ -548,12 +576,15 @@ void ProcessNewSkeletonData(k4abt_frame_t bodyFrame) {
 
     // temp var
     k4a_quaternion_t relativeJointOrientation;
-    static k4a_quaternion_t SpineChest_orientation, LeftShoulder_orientation, RightShoulder_orientation;
+    static k4a_quaternion_t SpineChest_orientation, LeftShoulder_orientation, RightShoulder_orientation, LeftElbow_orientation, RightElbow_orientation;
 
+    // Spine
     if(closestBody.skeleton.joints[K4ABT_JOINT_SPINE_CHEST].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW){
         SpineChest_orientation = closestBody.skeleton.joints[K4ABT_JOINT_SPINE_CHEST].orientation;
         quaternion2Euler(SpineChest_orientation, sc_r, sc_p, sc_y);
     }
+
+    // Left
 
     if(closestBody.skeleton.joints[K4ABT_JOINT_SHOULDER_LEFT].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW){
         LeftShoulder_orientation = closestBody.skeleton.joints[K4ABT_JOINT_SHOULDER_LEFT].orientation;
@@ -562,22 +593,34 @@ void ProcessNewSkeletonData(k4abt_frame_t bodyFrame) {
     }
 
     if(closestBody.skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW){
-        relativeJointOrientation = calculateRelativeQuaternion(closestBody.skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].orientation, LeftShoulder_orientation);
+        LeftElbow_orientation = closestBody.skeleton.joints[K4ABT_JOINT_ELBOW_LEFT].orientation;
+        relativeJointOrientation = calculateRelativeQuaternion(LeftElbow_orientation, LeftShoulder_orientation);
         quaternion2Euler(relativeJointOrientation, le_r, le_p, le_y);
     }
 
+    if(closestBody.skeleton.joints[K4ABT_JOINT_HAND_LEFT].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW){
+        relativeJointOrientation = calculateRelativeQuaternion(closestBody.skeleton.joints[K4ABT_JOINT_HAND_LEFT].orientation, LeftElbow_orientation);
+        quaternion2Euler(relativeJointOrientation, lw_r, lw_p, lw_y);
+    }
+
+    // Right
     if(closestBody.skeleton.joints[K4ABT_JOINT_SHOULDER_RIGHT].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW){
         RightShoulder_orientation = closestBody.skeleton.joints[K4ABT_JOINT_SHOULDER_RIGHT].orientation;
         relativeJointOrientation = calculateRelativeQuaternion(RightShoulder_orientation, SpineChest_orientation);
         quaternion2Euler(relativeJointOrientation, rs_r, rs_p, rs_y);
-
     }
     
     if(closestBody.skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW){
-        relativeJointOrientation = calculateRelativeQuaternion(closestBody.skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].orientation, RightShoulder_orientation);
+        RightElbow_orientation = closestBody.skeleton.joints[K4ABT_JOINT_ELBOW_RIGHT].orientation;
+        relativeJointOrientation = calculateRelativeQuaternion(RightElbow_orientation, RightShoulder_orientation);
         quaternion2Euler(relativeJointOrientation, re_r, re_p, re_y);
     }
-    
+
+    if(closestBody.skeleton.joints[K4ABT_JOINT_HAND_RIGHT].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW){
+        relativeJointOrientation = calculateRelativeQuaternion(closestBody.skeleton.joints[K4ABT_JOINT_HAND_RIGHT].orientation, RightElbow_orientation);
+        quaternion2Euler(relativeJointOrientation, rw_r, rw_p, rw_y);
+    }
+
     // For hand open and closing status detect
     #if Enable_Hand
     if(closestBody.skeleton.joints[K4ABT_JOINT_HANDTIP_LEFT].confidence_level > K4ABT_JOINT_CONFIDENCE_LOW && 
@@ -700,15 +743,21 @@ int main(int argc, char** argv)
     
     #if Control_G1
     const char* model_path = "../src/unitree_g1/scene.xml";
+    #if Real_Control
+    std::cout << "Initialize Real arm Controller" << std::endl;
+    RealArmController g1_controller("wlp3s0"); // TODO: Change to your interface
+    std::cout << "Initialization succeeded" << std::endl;
+    #endif
     #endif
     #if Control_H1
     const char* model_path = "../src/unitree_h1/mjcf/scene.xml"; 
-    #endif
     #if Real_Control
     std::cout << "Initialize Real arm Controller" << std::endl;
     RealArmController h1_controller("wlp3s0"); // TODO: Change to your interface
     std::cout << "Initialization succeeded" << std::endl;
     #endif
+    #endif
+
 
     char error[1000];
     m = mj_loadXML(model_path, nullptr, error, 1000);
@@ -719,6 +768,9 @@ int main(int argc, char** argv)
         [&](){ Control_loop(
                 #if Real_Control && Control_H1
                   &h1_controller
+                #endif
+                #if Real_Control && Control_G1
+                  &g1_controller
                 #endif
             ); }
     );

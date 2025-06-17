@@ -54,6 +54,15 @@ private:
     double average_;
 };
 
+
+static float quaternionTwist(const k4a_quaternion_t &q, const Eigen::Vector3f &axis)
+{
+    Eigen::Vector3f v(q.wxyz.x, q.wxyz.y, q.wxyz.z);
+    float w = q.wxyz.w;
+    float p = v.dot(axis);
+    return 2.0f * std::atan2(p, w);
+}
+
 // Test to get the rotation order, because the coordinate system definition of the Kinect camera is still a mystery
 void quaternion2Euler(k4a_quaternion_t q, float& roll, float& pitch, float& yaw)
 {

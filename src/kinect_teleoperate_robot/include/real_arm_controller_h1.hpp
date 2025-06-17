@@ -127,7 +127,6 @@ inline RealArmController::RealArmController(const std::string& network_interface
         JointIndex::kLeftShoulderRoll,
         JointIndex::kLeftShoulderYaw,
         JointIndex::kLeftElbow,
-        
         JointIndex::kRightShoulderPitch,
         JointIndex::kRightShoulderRoll,
         JointIndex::kRightShoulderYaw,
@@ -167,11 +166,11 @@ inline void RealArmController::set_control_signal(const hardware_control_signal&
         static_cast<float>(current_signal_.left_shoulder_pitch),
         static_cast<float>(current_signal_.left_shoulder_roll),
         static_cast<float>(current_signal_.left_shoulder_yaw),
-        static_cast<float>(current_signal_.left_elbow_yaw),
+        static_cast<float>(current_signal_.left_elbow_pitch),
         static_cast<float>(current_signal_.right_shoulder_pitch),
         static_cast<float>(current_signal_.right_shoulder_roll),
         static_cast<float>(current_signal_.right_shoulder_yaw),
-        static_cast<float>(current_signal_.right_elbow_yaw)
+        static_cast<float>(current_signal_.right_elbow_pitch)
     };
 
     for (int j = 0; j < arm_joints_.size(); ++j) {

@@ -43,6 +43,21 @@ double RE_mappingCameraYaw2RobotRadians(double camera_yaw) {
     return (M_PI / 2.0) - camera_yaw;
 }
 
+double LE_mappingCameraPitch2RobotRadians(double camera_pitch) {
+    return (M_PI / 2.0) - camera_pitch;
+}
+double RE_mappingCameraPitch2RobotRadians(double camera_pitch) {
+    return (M_PI / 2.0) + camera_pitch;
+}
+
+// double LE_mappingCameraRoll2RobotRadians(double camera_roll) {
+//     return camera_roll;
+// }
+
+// double RE_mappingCameraRoll2RobotRadians(double camera_roll) {
+//     return -camera_roll;
+// }
+
 // double SC_mappingCameraPitch2RobotTorso(double camera_pitch){
 //     return ((M_PI / 2.0) - std::abs(camera_pitch));
 // }
