@@ -44,7 +44,7 @@ According to main.cpp\
 #include <thread>
 #include <string>
 
-#include <unitree/idl/go2/LowCmd_.hpp>
+#include <unitree/idl/hg/LowCmd_.hpp>
 #include <unitree/idl/hg/LowState_.hpp>
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
@@ -107,10 +107,10 @@ private:
         kNotUsedJoint5 = 34
     };
 
-    unitree::robot::ChannelPublisherPtr<unitree_go::msg::dds_::LowCmd_> arm_sdk_publisher_;
+    unitree::robot::ChannelPublisherPtr<unitree_hg::msg::dds_::LowCmd_> arm_sdk_publisher_;
     unitree::robot::ChannelSubscriberPtr<unitree_hg::msg::dds_::LowState_> low_state_subscriber_;
     
-    unitree_go::msg::dds_::LowCmd_ msg_;
+    unitree_hg::msg::dds_::LowCmd_ msg_;
     unitree_hg::msg::dds_::LowState_ state_msg_;
     
     std::array<JointIndex, 8> arm_joints_;
@@ -159,7 +159,7 @@ inline RealArmController::RealArmController(const std::string& network_interface
 
     std::cout << "arm_sdk_publisher_.reset" << std::endl;
     arm_sdk_publisher_.reset(
-        new unitree::robot::ChannelPublisher<unitree_go::msg::dds_::LowCmd_>(
+        new unitree::robot::ChannelPublisher<unitree_hg::msg::dds_::LowCmd_>(
             kTopicArmSDK));
     
     std::cout << "arm_sdk_publisher_->InitChannel" << std::endl;
