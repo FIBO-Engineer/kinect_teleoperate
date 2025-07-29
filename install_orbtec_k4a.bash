@@ -60,7 +60,11 @@ cd OrbbecSDK_K4A_Wrapper_v1.10.3_linux_202408091809
 cp -r bin/* /usr/bin/
 mkdir -p /usr/lib/lib/x86_64-linux-gnu/
 cp -r lib/* /usr/lib/lib/x86_64-linux-gnu/
+cp -r lib/* /usr/lib/x86_64-linux-gnu/
 cp -r include/* /usr/include/
+
+# Install udev rules
+./scripts/install_udev_rules.sh
 
 # Save current path
 cd ..
