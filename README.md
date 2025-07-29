@@ -28,3 +28,4 @@ NOTE: You must have a cursor focus on `camera view` to press key
 2. Known working kernel is 6.8.0-60-generic
 3. To switch version, press SHIFT during boot
 4. In best case, k4aviewer works
+5. When installing nvidia-driver-*, dont forget to install nvidia-dkms-*
