@@ -18,5 +18,13 @@ Follow this guy's pose
 - h: help
 - b: body visualization mode
 - k: 3d window layout
+- s: start
 
 NOTE: You must have a cursor focus on `camera view` to press key
+
+
+### Note
+1. Known working nvidia driver version is 570
+2. Known working kernel is 6.8.0-60-generic
+3. To switch version, press SHIFT during boot
+4. In best case, k4aviewer works
