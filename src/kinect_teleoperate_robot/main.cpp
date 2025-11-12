@@ -35,10 +35,10 @@ using namespace std::chrono;
 bool s_isRunning = true;
 bool kb_start = false;
 
-#define Control_G1 true
-#define Control_H1 false
+#define Control_G1 false
+#define Control_H1 true
 #define Real_Control true    // control real unitree robot in reality
-#define Enable_Torso false    // enable torso rotation angle mapping. Test function, open with caution!
+#define Enable_Torso true    // enable torso rotation angle mapping. Test function, open with caution!
 #define Enable_Hand  false    // enable hand opening and closing status detection. Test function, open with caution!
 #define EchoFrequency false   // Whether to display the running frequency of each thread
 
@@ -514,8 +514,8 @@ void Control_loop() {
             H1_hardware_signal.right_shoulder_pitch = right_shoulder_yaw;
             H1_hardware_signal.right_shoulder_roll = right_shoulder_pitch;
             H1_hardware_signal.right_shoulder_yaw = right_shoulder_roll;
-            H1_hardware_signal.left_elbow_yaw = left_elbow_yaw;
-            H1_hardware_signal.right_elbow_yaw = right_elbow_yaw;
+            H1_hardware_signal.left_elbow_pitch = left_elbow_yaw;
+            H1_hardware_signal.right_elbow_pitch = right_elbow_yaw;
             real_controller->set_control_signal(H1_hardware_signal);
             #elif Control_G1
             G1_hardware_signal.left_shoulder_pitch = left_shoulder_yaw;
@@ -539,6 +539,14 @@ void Control_loop() {
             std::cout << "Control loop: " << frequency << " Hz" << std::endl;
             #endif
         }
+        // soft-real-time control
+        // from now to next 10ms
+        #if Real_Control
+        std::this_thread::sleep_until(ctrl_start + milliseconds(10));
+        #else
+        std::this_thread::sleep_until(ctrl_start + milliseconds(5));
+        #endif
+        ctrl_start = high_resolution_clock::now();
     }
 }
 

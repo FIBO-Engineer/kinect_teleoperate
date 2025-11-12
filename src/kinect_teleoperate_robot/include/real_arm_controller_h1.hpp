@@ -93,7 +93,7 @@ private:
     unitree_go::msg::dds_::LowCmd_ msg_;
     unitree_hg::msg::dds_::LowState_ state_msg_;
     
-    std::array<JointIndex, 8> arm_joints_;
+    std::array<JointIndex, 9> arm_joints_;
     hardware_control_signal current_signal_;
     
     float weight_;
@@ -130,7 +130,8 @@ inline RealArmController::RealArmController(const std::string& network_interface
         JointIndex::kRightShoulderPitch,
         JointIndex::kRightShoulderRoll,
         JointIndex::kRightShoulderYaw,
-        JointIndex::kRightElbow
+        JointIndex::kRightElbow,
+        JointIndex::kWaistYaw
     }
 {
     std::cout << "Initializing network interface " << network_interface << std::endl;
@@ -162,7 +163,7 @@ inline void RealArmController::set_control_signal(const hardware_control_signal&
     current_signal_ = signal;
     msg_.motor_cmd().at(JointIndex::kNotUsedJoint).q(weight_);
 
-    std::array<float, 8> target_positions = {
+    std::array<float, 9> target_positions = {
         static_cast<float>(current_signal_.left_shoulder_pitch),
         static_cast<float>(current_signal_.left_shoulder_roll),
         static_cast<float>(current_signal_.left_shoulder_yaw),
@@ -170,7 +171,8 @@ inline void RealArmController::set_control_signal(const hardware_control_signal&
         static_cast<float>(current_signal_.right_shoulder_pitch),
         static_cast<float>(current_signal_.right_shoulder_roll),
         static_cast<float>(current_signal_.right_shoulder_yaw),
-        static_cast<float>(current_signal_.right_elbow_pitch)
+        static_cast<float>(current_signal_.right_elbow_pitch),
+        static_cast<float>(current_signal_.spine_chest_torso)
     };
 
     for (int j = 0; j < arm_joints_.size(); ++j) {

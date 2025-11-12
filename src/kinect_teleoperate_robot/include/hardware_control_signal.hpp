@@ -12,4 +12,6 @@ struct hardware_control_signal {
     double right_shoulder_yaw = 0.0;
     double right_elbow_pitch = 0.0;
     // double right_elbow_roll = 0.0;
+
+    double spine_chest_torso = 0.0;
 };
