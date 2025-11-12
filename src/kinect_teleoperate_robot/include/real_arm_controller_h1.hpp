@@ -175,13 +175,19 @@ inline void RealArmController::set_control_signal(const hardware_control_signal&
         static_cast<float>(current_signal_.spine_chest_torso)
     };
 
-    for (int j = 0; j < arm_joints_.size(); ++j) {
+    for (int j = 0; j < 8; ++j) {
         msg_.motor_cmd().at(arm_joints_.at(j)).q(target_positions.at(j));
         msg_.motor_cmd().at(arm_joints_.at(j)).dq(dq_);
         msg_.motor_cmd().at(arm_joints_.at(j)).kp(kp_);
         msg_.motor_cmd().at(arm_joints_.at(j)).kd(kd_);
         msg_.motor_cmd().at(arm_joints_.at(j)).tau(tau_ff_);
     }
+
+    msg_.motor_cmd().at(arm_joints_.at(8)).q(target_positions.at(8));
+    msg_.motor_cmd().at(arm_joints_.at(8)).dq(dq_);
+    msg_.motor_cmd().at(arm_joints_.at(8)).kp(0.5*kp_);
+    msg_.motor_cmd().at(arm_joints_.at(8)).kd(kd_);
+    msg_.motor_cmd().at(arm_joints_.at(8)).tau(tau_ff_);
 
     arm_sdk_publisher_->Write(msg_);
 }

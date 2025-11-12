@@ -434,7 +434,7 @@ void Control_loop() {
     //                     // le_p_filter,re_p_filter,
     //                     // le_r_filter,re_r_filter;
 
-    StartEndPoseDetector pose_detector;
+    // StartEndPoseDetector pose_detector;
 
     time_point<high_resolution_clock> ctrl_start;
     while (s_isRunning) {
@@ -457,10 +457,11 @@ void Control_loop() {
         double spine_chest_torso = SC_mappingCameraPitch2RobotTorso(sc_p);
         #endif
 
-        bool start = pose_detector.isStartEndPose(left_shoulder_roll, left_shoulder_pitch, left_shoulder_yaw,
-                                                  right_shoulder_roll, right_shoulder_pitch, right_shoulder_yaw,
-                                                  left_elbow_yaw, right_elbow_yaw);
-        if(start || kb_start)
+        // bool start = pose_detector.isStartEndPose(left_shoulder_roll, left_shoulder_pitch, left_shoulder_yaw,
+                                                //   right_shoulder_roll, right_shoulder_pitch, right_shoulder_yaw,
+                                                //   left_elbow_yaw, right_elbow_yaw);
+        // if(start || kb_start)
+        if (kb_start)
         {
             // smoothing
             left_shoulder_roll = ls_r_filter.update(left_shoulder_roll);
@@ -516,6 +517,7 @@ void Control_loop() {
             H1_hardware_signal.right_shoulder_yaw = right_shoulder_roll;
             H1_hardware_signal.left_elbow_pitch = left_elbow_yaw;
             H1_hardware_signal.right_elbow_pitch = right_elbow_yaw;
+            H1_hardware_signal.spine_chest_torso = spine_chest_torso;
             real_controller->set_control_signal(H1_hardware_signal);
             #elif Control_G1
             G1_hardware_signal.left_shoulder_pitch = left_shoulder_yaw;
@@ -526,6 +528,7 @@ void Control_loop() {
             G1_hardware_signal.right_shoulder_yaw = right_shoulder_roll;
             G1_hardware_signal.left_elbow_pitch = left_elbow_yaw;
             G1_hardware_signal.right_elbow_pitch = right_elbow_yaw;
+            G1_hardware_signal.spine_chest_torso = spine_chest_torso;
             // TODO: Roll
             real_controller->set_control_signal(G1_hardware_signal);
             #endif
@@ -753,7 +756,7 @@ int main(int argc, char** argv)
     const char* model_path = "../src/unitree_g1/scene.xml";
     #if Real_Control
     std::cout << "Initialize Real arm Controller" << std::endl;
-    RealArmController g1_controller("wlp3s0"); // TODO: Change to your interface
+    RealArmController g1_controller("wlp62s0"); // TODO: Change to your interface
     std::cout << "Initialization succeeded" << std::endl;
     #endif
     #endif
@@ -761,7 +764,7 @@ int main(int argc, char** argv)
     const char* model_path = "../src/unitree_h1/mjcf/scene.xml"; 
     #if Real_Control
     std::cout << "Initialize Real arm Controller" << std::endl;
-    RealArmController h1_controller("wlp3s0"); // TODO: Change to your interface
+    RealArmController h1_controller("wlp62s0"); // TODO: Change to your interface
     std::cout << "Initialization succeeded" << std::endl;
     #endif
     #endif
